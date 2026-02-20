@@ -2,7 +2,7 @@
 
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
-=====================================================================
+====================================================================
 ========                                    .-----.          ========
 ========         .----------------------.   | === |          ========
 ========         |.-""""""""""""""""""-.|   |-----|          ========
@@ -44,8 +44,8 @@ What is Kickstart?
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+ -- vim.g.mapleader = ' '
+-- vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
@@ -162,10 +162,11 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+vim.keymap.set('t', '<C-w>h', [[<C-\><C-n><C-w><C-h>]])
+vim.keymap.set('t', '<C-w>l', [[<C-\><C-n><C-w><C-l>]])
+vim.keymap.set('t', '<C-w>j', [[<C-\><C-n><C-w><C-j>]])
+vim.keymap.set('t', '<C-w>k', [[<C-\><C-n><C-w><C-k>]])
 
 vim.keymap.set('n', '<leader>tt', [[:ToggleToFT term<CR>]])
 vim.keymap.set('n', '<C-w>n', [[gt]])
@@ -176,6 +177,8 @@ vim.keymap.set('t', '<leader>tt', [[<C-\><C-n>:ToggleToFT term<CR>]])
 vim.keymap.set('t', '<C-w>n', [[<C-\><C-n>gt]])
 vim.keymap.set('t', '<C-w>N', [[<C-\><C-n>gT]])
 vim.keymap.set('t', '<C-w>c', [[<C-\><C-n>:tabnew<CR>]])
+
+vim.keymap.set('n', '<Space>', [[:nohls <CR>]])
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -274,7 +277,7 @@ require('lazy').setup({
     event = 'VimEnter',
     opts = {
       -- delay between pressing a key and opening which-key (milliseconds)
-      delay = 0,
+      delay = 500,
       icons = { mappings = vim.g.have_nerd_font },
 
       -- Document existing key chains
@@ -308,17 +311,6 @@ require('lazy').setup({
     event = 'VimEnter',
     dependencies = {
       'nvim-lua/plenary.nvim',
-      { -- If encountering errors, see telescope-fzf-native README for installation instructions
-        'nvim-telescope/telescope-fzf-native.nvim',
-
-        -- `build` is used to run some command when the plugin is installed/updated.
-        -- This is only run then, not every time Neovim starts up.
-        build = 'make',
-
-        -- `cond` is a condition used to determine whether this plugin should be
-        -- installed and loaded.
-        cond = function() return vim.fn.executable 'make' == 1 end,
-      },
       { 'nvim-telescope/telescope-ui-select.nvim' },
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
@@ -356,13 +348,16 @@ require('lazy').setup({
         --   },
         -- },
         -- pickers = {}
+        --  pickers = {
+        find_files = {
+          find_command = { 'fd', '--type', 'f', '--strip-cwd-prefix' },
+        },
         extensions = {
           ['ui-select'] = { require('telescope.themes').get_dropdown() },
         },
       }
 
       -- Enable Telescope extensions if they are installed
-      pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
 
       -- See `:help telescope.builtin`
@@ -467,7 +462,7 @@ require('lazy').setup({
       -- and language tooling communicate in a standardized fashion.
       --
       -- In general, you have a "server" which is some tool built to understand a particular
-      -- language (such as `gopls`, `lua_ls`, `rust_analyzer`, etc.). These Language Servers
+      -- language (such as `gopls`, `rust_analyzer`, etc.). These Language Servers
       -- (sometimes called LSP servers, but that's kind of like ATM Machine) are standalone
       -- processes that communicate with some "client" - in this case, Neovim!
       --
@@ -566,6 +561,8 @@ require('lazy').setup({
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
+        ty = {},
+        ruff = {},
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
         --    https://github.com/pmizio/typescript-tools.nvim
@@ -596,31 +593,6 @@ require('lazy').setup({
       end
 
       -- Special Lua Config, as recommended by neovim help docs
-      vim.lsp.config('lua_ls', {
-        on_init = function(client)
-          if client.workspace_folders then
-            local path = client.workspace_folders[1].name
-            if path ~= vim.fn.stdpath 'config' and (vim.uv.fs_stat(path .. '/.luarc.json') or vim.uv.fs_stat(path .. '/.luarc.jsonc')) then return end
-          end
-
-          client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
-            runtime = {
-              version = 'LuaJIT',
-              path = { 'lua/?.lua', 'lua/?/init.lua' },
-            },
-            workspace = {
-              checkThirdParty = false,
-              -- NOTE: this is a lot slower and will cause issues when working on your own configuration.
-              --  See https://github.com/neovim/nvim-lspconfig/issues/3189
-              library = vim.api.nvim_get_runtime_file('', true),
-            },
-          })
-        end,
-        settings = {
-          Lua = {},
-        },
-      })
-      vim.lsp.enable 'lua_ls'
     end,
   },
 
@@ -655,7 +627,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'ruff_format' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
@@ -719,7 +691,7 @@ require('lazy').setup({
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'default',
-
+        ['<tab>'] = { 'select_next', 'fallback' },
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
       },
@@ -734,6 +706,7 @@ require('lazy').setup({
         -- By default, you may press `<c-space>` to show the documentation.
         -- Optionally, set `auto_show = true` to show the documentation after a delay.
         documentation = { auto_show = false, auto_show_delay_ms = 500 },
+        list = { selection = { preselect = false, auto_insert = true } },
       },
 
       sources = {
@@ -849,6 +822,13 @@ require('lazy').setup({
   -- Or use telescope!
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
   -- you can continue same window with `<space>sr` which resumes last telescope search
+  {
+    'lukas-reineke/indent-blankline.nvim',
+    main = 'ibl',
+    ---@module "ibl"
+    ---@type ibl.config
+    opts = {},
+  },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
@@ -870,6 +850,17 @@ require('lazy').setup({
     },
   },
 })
+
+require('ibl').setup {
+  indent = {
+    char = '┊',
+  },
+  scope = {
+    enabled = true,
+    show_start = true,
+    highlight = { 'Conceal' },
+  },
+}
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et

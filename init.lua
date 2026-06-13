@@ -545,7 +545,7 @@ require('lazy').setup({
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         ty = {},
         ruff = {},
         --
@@ -751,6 +751,13 @@ require('lazy').setup({
       signature = { enabled = true },
     },
   },
+  {
+    'lukas-reineke/indent-blankline.nvim',
+    main = 'ibl',
+    ---@module "ibl"
+    ---@type ibl.config
+    opts = {},
+  },
 
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
@@ -898,13 +905,6 @@ require('lazy').setup({
   -- Or use telescope!
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
   -- you can continue same window with `<space>sr` which resumes last telescope search
-      {
-        'lukas-reineke/indent-blankline.nvim',
-        main = 'ibl',
-        ---@module "ibl"
-        ---@type ibl.config
-        opts = {},
-      },
   { ---@diagnostic disable-line: missing-fields
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
